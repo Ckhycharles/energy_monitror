@@ -1,0 +1,423 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Energy Usage Monitoring Dashboard</title>
+    <link href="{% static "styles.css" %}" rel="stylesheet">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* --- Dashboard Specific Styles --- */
+      body {
+        font-family: "Inter", Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+
+      header {
+        background-color: #2a78df;
+        color: white;
+        padding: 15px 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+      }
+
+      header p {
+        margin: 5px 0 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .logout-link {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        display: inline-block;
+      }
+
+      .logout-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: white;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: 1200px;
+        margin: 20px auto;
+      }
+
+      .card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 220px;
+        transition: transform 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+      }
+
+      .card h3 {
+        margin: 0 0 15px;
+        font-size: 1.2rem;
+        color: #2a78df;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+
+      .card-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+
+      .chart-container {
+        width: 100%;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .data-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 10px;
+      }
+
+      .data-label {
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .message {
+        background-color: #e6f7ff;
+        color: #0056b3;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        text-align: center;
+        font-size: 0.9rem;
+        border: 1px solid #b3e0ff;
+      }
+
+      .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-color: #f5c6cb;
+      }
+
+      .card button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-top: 15px;
+        transition: background-color 0.3s ease;
+      }
+
+      .card button:hover {
+        background-color: #218838;
+      }
+
+      .card input[type="number"],
+      .card select {
+        width: calc(100% - 20px);
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 0.9rem;
+      }
+
+      footer {
+        text-align: center;
+        padding: 20px;
+        font-size: 0.85rem;
+        color: #888;
+        margin-top: 20px;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .dashboard {
+          grid-template-columns: 1fr;
+          padding: 1rem;
+        }
+        header {
+          padding: 10px;
+        }
+        .logout-link {
+          position: static;
+          margin-top: 10px;
+          width: 100%;
+          text-align: center;
+        }
+      }
+      /* --- End Dashboard Specific Styles --- */
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Energy Usage Monitoring Dashboard (EUMD)</h1>
+      <p>Track, Analyze, and Save Energy</p>
+      <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+    </header>
+
+    <main class="dashboard">
+      <!-- Latest Consumption Card -->
+      <div class="card">
+        <h3>Latest Consumption</h3>
+        <div class="card-content">
+          {% if latest_reading %}
+          <p class="data-value" id="latestVoltage">
+            {{ latest_reading.voltage }} V
+          </p>
+          <p class="data-label">Voltage</p>
+          <p class="data-value" id="latestCurrent">
+            {{ latest_reading.current }} A
+          </p>
+          <p class="data-label">Current</p>
+          <p class="data-label">
+            As of: {{ latest_reading.timestamp|date:"P, D d M Y" }}
+          </p>
+          {% else %}
+          <p class="data-value">No Data</p>
+          <p class="data-label">Please add readings</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Usage Trend Chart Card -->
+      <div class="card">
+        <h3>Usage Trend (Last 50 Readings)</h3>
+        <div class="chart-container">
+          <canvas id="dailyUsageChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Energy Cost Prediction Card -->
+      <div class="card">
+        <h3>Energy Cost Prediction (Monthly)</h3>
+        <div class="card-content">
+          <p class="data-value" id="costPrediction">KSh 0.00</p>
+          <button onclick="predictBill()">Predict Bill</button>
+        </div>
+      </div>
+
+      <!-- UPDATED: Future Usage Prediction Card (Displays directly from context) -->
+      <div class="card">
+        <h3>Future Usage Prediction (1 Hour Ahead)</h3>
+        <div class="card-content">
+          {% if predicted_voltage is not None and predicted_current is not None
+          %}
+          <p class="data-label">
+            Predicted Voltage:
+            <span class="data-value">{{ predicted_voltage }} V</span>
+          </p>
+          <p class="data-label">
+            Predicted Current:
+            <span class="data-value">{{ predicted_current }} A</span>
+          </p>
+          <p class="data-label" style="font-size: 0.8rem; color: #888">
+            For: {{ predicted_timestamp }}
+          </p>
+          {% else %}
+          <p class="data-value">Prediction N/A</p>
+          <p class="data-label error-message">
+            {% if prediction_error %}{{ prediction_error }}{% else %}Not enough
+            data or model not trained.{% endif %}
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Alerts Card -->
+      <div class="card">
+        <h3>Alerts</h3>
+        <div class="card-content">
+          <ul id="alerts">
+            <li>No unusual activity detected</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Data Export Card -->
+      <div class="card">
+        <h3>Data Export</h3>
+        <div class="card-content">
+          <p class="data-label">Download all historical data for analysis.</p>
+          <a
+            href="{% url 'export_csv' %}"
+            class="button"
+            style="text-decoration: none"
+            >Download CSV</a
+          >
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      &copy; {{ current_time.year }} EUMD | Developed for Homes and Schools |
+      Last Updated: {{ current_time|date:"P, D d M Y" }}
+    </footer>
+
+    <script>
+      // Function to get CSRF token from cookie
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(
+                cookie.substring(name.length + 1)
+              );
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+      const csrftoken = getCookie("csrftoken");
+
+      let dailyUsageChart;
+
+      const initialReadings = JSON.parse(
+        "{{ readings_for_chart_json|escapejs }}"
+      );
+
+      function initializeChart() {
+        if (initialReadings && initialReadings.length > 0) {
+          updateDailyUsageChart(initialReadings);
+        } else {
+          const ctx = document
+            .getElementById("dailyUsageChart")
+            .getContext("2d");
+          ctx.font = "14px Arial";
+          ctx.fillStyle = "#666";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "No data available for chart.",
+            ctx.canvas.width / 2,
+            ctx.canvas.height / 2
+          );
+        }
+      }
+
+      function updateDailyUsageChart(readings) {
+        const labels = readings.map((r) =>
+          new Date(r.timestamp).toLocaleTimeString()
+        );
+        const voltages = readings.map((r) => r.voltage);
+        const currents = readings.map((r) => r.current);
+
+        const ctx = document.getElementById("dailyUsageChart").getContext("2d");
+
+        if (dailyUsageChart) {
+          dailyUsageChart.destroy();
+        }
+
+        dailyUsageChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Voltage (V)",
+                data: voltages,
+                borderColor: "rgb(75, 192, 192)",
+                tension: 0.1,
+                fill: false,
+              },
+              {
+                label: "Current (A)",
+                data: currents,
+                borderColor: "rgb(255, 99, 132)",
+                tension: 0.1,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: "top",
+              },
+            },
+          },
+        });
+      }
+
+      async function predictBill() {
+        document.getElementById("costPrediction").innerText = "Predicting...";
+        try {
+          const response = await fetch('{% url "predict_bill_api" %}', {
+            method: "GET",
+            headers: {
+              "X-CSRFToken": csrftoken,
+              "Content-Type": "application/json",
+            },
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          document.getElementById(
+            "costPrediction"
+          ).innerText = `KSh ${data.predicted_bill.toFixed(2)}`;
+        } catch (error) {
+          console.error("Error predicting bill:", error);
+          document.getElementById("costPrediction").innerText = "Error";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeChart();
+      });
+    </script>
+  </body>
+</html>
