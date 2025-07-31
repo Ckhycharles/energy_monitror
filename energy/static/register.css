@@ -1,0 +1,194 @@
+/* styles.css */
+
+/* Universal box-sizing for consistent layout */
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+    /* Clean, modern font */
+}
+
+/* Body styling for a full-screen, centered gradient background */
+body {
+    margin: 0;
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    /* Beautiful blue gradient */
+    display: flex;
+    justify-content: center;
+    /* Center horizontally */
+    align-items: center;
+    /* Center vertically */
+    height: 100vh;
+    /* Full viewport height */
+    overflow: hidden;
+    /* Prevent scrollbars if content is smaller than viewport */
+}
+
+/* Container for the form to give it a card-like appearance */
+.container {
+    background: white;
+    /* White background for the form card */
+    padding: 2rem;
+    /* Ample padding inside the container */
+    border-radius: 1rem;
+    /* Rounded corners for a modern look */
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    /* Soft shadow for depth */
+    width: 100%;
+    /* Full width on smaller screens */
+    max-width: 600px;
+    /* Maximum width for desktop to prevent it from being too wide */
+    animation: fadeIn 0.8s ease-out;
+    /* Simple fade-in animation */
+}
+
+/* Animation for the container */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styling for the main heading */
+h1 {
+    text-align: center;
+    /* Center the "Sign Up" text */
+    margin-bottom: 1.5rem;
+    /* Space below the heading */
+    color: #333;
+    /* Darker text color */
+}
+
+/* Styling for messages (e.g., Django messages) */
+.message {
+    color: #d9534f;
+    /* Red for error messages */
+    background-color: #f2dede;
+    border: 1px solid #ebccd1;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+/* Form layout */
+form {
+    display: flex;
+    flex-direction: column;
+    /* Stack elements vertically */
+}
+
+/* Input field styling */
+input {
+    padding: 0.75rem;
+    /* Padding inside input fields */
+    margin: 0.5rem 0;
+    /* Vertical spacing between inputs */
+    border: 1px solid #ccc;
+    /* Light grey border */
+    border-radius: 0.5rem;
+    /* Rounded input corners */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    /* Smooth transition on focus */
+}
+
+input:focus {
+    border-color: #00c6ff;
+    /* Highlight border on focus */
+    box-shadow: 0 0 5px rgba(0, 198, 255, 0.5);
+    /* Soft shadow on focus */
+    outline: none;
+    /* Remove default outline */
+}
+
+/* Button styling */
+button {
+    padding: 0.75rem;
+    /* Padding inside the button */
+    margin-top: 1rem;
+    /* Space above the button */
+    background-color: #00c6ff;
+    /* Vibrant blue background */
+    color: white;
+    /* White text */
+    border: none;
+    /* No border */
+    border-radius: 0.5rem;
+    /* Rounded button corners */
+    cursor: pointer;
+    /* Pointer cursor on hover */
+    font-weight: bold;
+    /* Bold text */
+    font-size: 1rem;
+    /* Readable font size */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    /* Smooth hover effects */
+    box-shadow: 0 4px 10px rgba(0, 198, 255, 0.3);
+    /* Subtle shadow */
+}
+
+button:hover {
+    background-color: #009ecf;
+    /* Slightly darker blue on hover */
+    transform: translateY(-2px);
+    /* Slight lift effect on hover */
+}
+
+button:active {
+    transform: translateY(0);
+    /* Press effect on click */
+    box-shadow: 0 2px 5px rgba(0, 198, 255, 0.4);
+}
+
+/* Styling for toggle links (if you add login/signup toggle later) */
+.toggle {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.toggle a {
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.toggle a:hover {
+    text-decoration: underline;
+}
+
+/* Styling for social buttons (if you add them later) */
+.social-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.social-buttons button {
+    width: 48%;
+    background-color: #eee;
+    color: #333;
+    box-shadow: none;
+    /* Remove shadow for these buttons */
+}
+
+.social-buttons button:hover {
+    background-color: #ddd;
+}
+
+/* Class to hide elements, useful for JavaScript toggling */
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 480px) {
+    .container {
+        padding: 1.5rem;
+        /* Reduce padding on small screens */
+        margin: 1rem;
+        /* Add some margin to prevent sticking to edges */
+    }
+}

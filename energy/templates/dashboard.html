@@ -1,0 +1,462 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Energy Usage Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* General Reset & Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #e0eafc, #cfdef3); /* Softer, modern gradient background */
+            min-height: 100vh; /* Ensure full viewport height */
+            display: flex;
+            flex-direction: column;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header Styling */
+        header {
+            background: linear-gradient(to right, #2a78df, #00c6ff); /* Blue gradient */
+            color: white;
+            padding: 20px 30px; /* Increased padding */
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* Stronger shadow */
+            position: relative;
+            z-index: 10; /* Ensure header is on top */
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem; /* Larger title */
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            margin: 10px 0 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .logout-link {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(173, 244, 7, 0.2);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+            display: inline-block;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .logout-link:hover {
+            background-color: rgba(244, 89, 11, 0.3);
+            border-color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Adjusted minmax for larger cards */
+            gap: 2rem; /* Increased gap for more breathing room */
+            padding: 2rem;
+            max-width: 1300px; /* Wider dashboard */
+            margin: 30px auto; /* More margin from header */
+            flex-grow: 1; /* Allow dashboard to take available space */
+        }
+
+        /* Card Styling */
+        .card {
+            background: white;
+            padding: 2rem; /* More padding inside cards */
+            border-radius: 15px; /* Softer rounded corners */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Deeper shadow */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 250px; /* Taller cards */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden; /* Hide overflow for rounded corners */
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-8px); /* More pronounced lift effect */
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Stronger shadow on hover */
+        }
+
+        .card h3 {
+            margin: 0 0 20px;
+            font-size: 1.5rem; /* Larger heading */
+            color: #2a78df;
+            border-bottom: 2px solid #e0eafc; /* More visible separator */
+            padding-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 10px; /* Space between heading and content */
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 200px; /* Slightly taller charts */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .data-value {
+            font-size: 3rem; /* Even larger font for key data */
+            font-weight: 700;
+            color: #007bff; /* Primary highlight color */
+            margin-bottom: 5px; /* Reduced margin for tighter spacing */
+            line-height: 1.2;
+        }
+
+        .data-label {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 10px; /* Space between label and next element */
+        }
+
+        /* Message Styling */
+        .message {
+            background-color: #d4edda; /* Light green for success */
+            color: #155724; /* Dark green text */
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px auto; /* Center messages */
+            text-align: center;
+            font-size: 1rem;
+            border: 1px solid #c3e6cb;
+            max-width: 600px; /* Limit width for readability */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .error-message {
+            background-color: #f8d7da; /* Light red for error */
+            color: #721c24; /* Dark red text */
+            border-color: #f5c6cb;
+        }
+
+        /* Button Styling */
+        .card button,
+        .card .button { /* Apply to both <button> and <a> with class 'button' */
+            background: linear-gradient(45deg, #28a745, #218838); /* Green gradient */
+            color: white;
+            border: none;
+            padding: 12px 25px; /* Larger buttons */
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 20px; /* More space above buttons */
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-decoration: none; /* For the <a> tag styled as button */
+            display: inline-block; /* For the <a> tag styled as button */
+        }
+
+        .card button:hover,
+        .card .button:hover {
+            background: linear-gradient(45deg, #218838, #1e7e34);
+            transform: translateY(-3px); /* Lift effect */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+
+        /* Input Field Styling */
+        .card input[type="number"],
+        .card input[type="text"], /* Added text input */
+        .card select {
+            width: calc(100% - 40px); /* Adjust for padding and margin */
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card input[type="number"]:focus,
+        .card input[type="text"]:focus,
+        .card select:focus {
+            border-color: #2a78df;
+            box-shadow: 0 0 0 3px rgba(42, 120, 223, 0.2);
+            outline: none;
+        }
+
+        /* Footer Styling */
+        footer {
+            text-align: center;
+            padding: 25px;
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 30px;
+            background-color: #f0f4f8; /* Light background for footer */
+            border-top: 1px solid #e0eafc;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header {
+                padding: 15px 20px;
+            }
+            header h1 {
+                font-size: 2rem;
+            }
+            header p {
+                font-size: 1rem;
+            }
+            .logout-link {
+                position: static;
+                margin-top: 15px;
+                width: auto;
+                display: block;
+            }
+            .dashboard {
+                grid-template-columns: 1fr; /* Single column on small screens */
+                padding: 1rem;
+                margin: 20px auto;
+            }
+            .card {
+                padding: 1.5rem;
+                min-height: 220px;
+            }
+            .card h3 {
+                font-size: 1.3rem;
+            }
+            .data-value {
+                font-size: 2.2rem;
+            }
+            .data-label {
+                font-size: 0.9rem;
+            }
+            .card button, .card .button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+            .card input[type="number"], .card input[type="text"], .card select {
+                width: calc(100% - 30px);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Energy Usage Monitoring Dashboard (EUMD)</h1>
+        <p>Track, Analyze, and Save Energy</p>
+        <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+    </header>
+
+    <main class="dashboard">
+        
+        <div class="card">
+            <h3>Latest Consumption</h3>
+            <div class="card-content">
+                {% if latest_reading %}
+                    <p class="data-value" id="latestVoltage">{{ latest_reading.voltage }} V</p>
+                    <p class="data-label">Voltage</p>
+                    <p class="data-value" id="latestCurrent">{{ latest_reading.current }} A</p>
+                    <p class="data-label">Current</p>
+                    <p class="data-label">As of: {{ latest_reading.timestamp|date:"P, D d M Y" }}</p>
+                {% else %}
+                    <p class="data-value">No Data</p>
+                    <p class="data-label">Please add readings</p>
+                {% endif %}
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Usage Trend </h3>
+            <div class="chart-container">
+                <canvas id="dailyUsageChart"></canvas>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Energy Cost Prediction </h3>
+            <div class="card-content">
+                <p class="data-value" id="costPrediction">KSh {{predicted_bills}}</p>
+                
+            </div>
+        </div>
+
+  
+        <div class="card">
+            <h3>Future Usage Prediction </h3>
+            <div class="card-content">
+                {% if prediction_error %}
+                    <p class="data-value">Prediction /p>
+                    <p class="data-label error-message">{{ prediction_error }}</p>
+                {% else %}
+                    <p class="data-label">Predicted Voltage: <span class="data-value">{{ predicted_voltage|default:"N/A" }} V</span></p>
+                    <p class="data-label">Predicted Current: <span class="data-value">{{ predicted_current|default:"N/A" }} A</span></p>
+                    <p class="data-label" style="font-size: 0.8rem; color: #888;">For: {{ predicted_timestamp|default:"N/A" }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card">
+            <h3>Alerts</h3>
+            <div class="card-content">
+                <ul id="alerts">
+                    <li>No unusual activity detected</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Data Export</h3>
+            <div class="card-content">
+                <p class="data-label">Download Energy usage data .</p>
+                <a href="{% url 'export_csv' %}" class="button" style="text-decoration: none;">Download CSV</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        &copy; {{ current_time.year }} EUMD | Developed for Homes and Schools | Last Updated: {{ current_time|date:"P, D d M Y" }}
+    </footer>
+
+    <script>
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        let dailyUsageChart;
+
+        const initialReadings = JSON.parse('{{ readings_for_chart_json|escapejs }}');
+
+        function initializeChart() {
+            if (initialReadings && initialReadings.length > 0) {
+                updateDailyUsageChart(initialReadings);
+            } else {
+                const ctx = document.getElementById('dailyUsageChart').getContext('2d');
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#666";
+                ctx.textAlign = "center";
+                ctx.fillText("No data available for chart.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+            }
+        }
+
+        function updateDailyUsageChart(readings) {
+            const labels = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
+            const voltages = readings.map(r => r.voltage);
+            const currents = readings.map(r => r.current);
+
+            const ctx = document.getElementById('dailyUsageChart').getContext('2d');
+
+            if (dailyUsageChart) {
+                dailyUsageChart.destroy();
+            }
+
+            dailyUsageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Voltage (V)',
+                            data: voltages,
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1,
+                            fill: false
+                        },
+                        {
+                            label: 'Current (A)',
+                            data: currents,
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+
+        async function predictBill() {
+            document.getElementById('costPrediction').innerText = 'Predicting...';
+            try {
+                const response = await fetch('{% url "predict_bill_api" %}', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    },
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                document.getElementById('costPrediction').innerText = `KSh ${data.predicted_bill.toFixed(2)}`;
+            } catch (error) {
+                console.error("Error predicting bill:", error);
+                document.getElementById('costPrediction').innerText = 'Error';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeChart();
+        });
+    </script>
+
+</body>
+</html>

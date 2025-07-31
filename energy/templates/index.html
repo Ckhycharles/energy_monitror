@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Energy Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg: #f4f7f9;
+        --card-bg: #ffffff;
+        --accent: #007bff;
+        --text: #333;
+        --table-head-bg: #007bff;
+        --table-head-text: #fff;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        padding: 2rem;
+      }
+
+      h1 {
+        text-align: center;
+        color: var(--accent);
+        margin-bottom: 2rem;
+      }
+
+      .dashboard-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        background-color: var(--card-bg);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        border-radius: 12px;
+        transition: background 0.3s ease;
+      }
+
+      canvas {
+        margin-bottom: 2rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      thead {
+        background-color: var(--table-head-bg);
+        color: var(--table-head-text);
+      }
+
+      th,
+      td {
+        padding: 12px 15px;
+        text-align: center;
+        border-bottom: 1px solid #ccc;
+      }
+
+      tbody tr:hover {
+        background-color: #f1f1f1;
+        transition: background 0.3s ease;
+      }
+
+      .footer {
+        margin-top: 2rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #777;
+      }
+
+      .theme-toggle {
+        text-align: right;
+        margin-bottom: 10px;
+      }
+
+      .theme-toggle button {
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      @media (max-width: 600px) {
+        th,
+        td {
+          padding: 8px;
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Electricity Usage</h1>
+
+    <div class="dashboard-container">
+      <div class="theme-toggle">
+        <button onclick="toggleTheme()">change Theme</button>
+      </div>
+
+      <canvas id="usageChart" height="100"></canvas>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Voltage (V)</th>
+            <th>Current (A)</th>
+          </tr>
+        </thead>
+        <tbody id="dataBody">
+          {% for r in readings %}
+          <tr>
+            <td>{{ r.timestamp }}</td>
+            <td>{{ r.voltage }}</td>
+            <td>{{ r.current }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        &copy; {{time}} Energy Usage Monitoring Dashboard
+      </div>
+    </div>
+
+    <script>
+      let usageChart;
+
+      // Initialize Chart.js
+      function initChart(labels, voltageData, currentData) {
+        const ctx = document.getElementById("usageChart").getContext("2d");
+        usageChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Voltage (V)",
+                data: voltageData,
+                borderColor: "#007bff",
+                fill: false,
+              },
+              {
+                label: "Current (A)",
+                data: currentData,
+                borderColor: "#28a745",
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true,
+                  text: "Timestamp",
+                },
+              },
+              y: {
+                display: true,
+                title: {
+                  display: true,
+                  text: "Value",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Update chart and table via AJAX
+      function fetchData() {
+        fetch("/api/receive-latest/")
+          .then((response) => response.json())
+          .then((data) => {
+            // Update table
+            const tbody = document.getElementById("dataBody");
+            tbody.innerHTML = "";
+            data.readings.forEach((r) => {
+              tbody.innerHTML += `
+              <tr>
+                <td>${r.timestamp}</td>
+                <td>${r.voltage}</td>
+                <td>${r.current}</td>
+              </tr>`;
+            });
+
+            // Update chart
+            const labels = data.readings.map((r) => r.timestamp);
+            const voltage = data.readings.map((r) => r.voltage);
+            const current = data.readings.map((r) => r.current);
+
+            usageChart.data.labels = labels;
+            usageChart.data.datasets[0].data = voltage;
+            usageChart.data.datasets[1].data = current;
+            usageChart.update();
+          });
+      }
+
+      // Theme toggle
+      function toggleTheme() {
+        const root = document.documentElement;
+        if (root.style.getPropertyValue("--bg") === "#1e1e1e") {
+          root.style.setProperty("--bg", "#f4f7f9");
+          root.style.setProperty("--card-bg", "#ffffff");
+          root.style.setProperty("--text", "#333");
+          root.style.setProperty("--table-head-bg", "#007bff");
+          root.style.setProperty("--table-head-text", "#fff");
+        } else {
+          root.style.setProperty("--bg", "#1e1e1e");
+          root.style.setProperty("--card-bg", "#2c2c2c");
+          root.style.setProperty("--text", "#f4f4f4");
+          root.style.setProperty("--table-head-bg", "#444");
+          root.style.setProperty("--table-head-text", "#f4f4f4");
+        }
+      }
+
+      // Initial data from template
+      window.addEventListener("DOMContentLoaded", () => {
+        const initialLabels = Array.from(
+          document.querySelectorAll("#dataBody tr td:first-child")
+        ).map((td) => td.textContent);
+        const initialVoltage = Array.from(
+          document.querySelectorAll("#dataBody tr td:nth-child(2)")
+        ).map((td) => parseFloat(td.textContent));
+        const initialCurrent = Array.from(
+          document.querySelectorAll("#dataBody tr td:nth-child(3)")
+        ).map((td) => parseFloat(td.textContent));
+        initChart(initialLabels, initialVoltage, initialCurrent);
+        setInterval(fetchData, 5000); 
+      });
+      const voltageThreshold = 240;
+      const currentThreshold = 6;
+
+      function checkForAlerts(latestReading) {
+        let alertMessage = "";
+
+        if (latestReading.voltage > voltageThreshold) {
+          alertMessage += `High voltage (${latestReading.voltage}V)! `;
+        }
+        if (latestReading.current > currentThreshold) {
+          alertMessage += `High current (${latestReading.current}A)!`;
+        }
+
+        const alertBox = document.getElementById("alert-box");
+        const alertMessageSpan = document.getElementById("alert-message");
+
+        if (alertMessage) {
+          alertMessageSpan.textContent = alertMessage;
+          alertBox.style.display = "block";
+        } else {
+          alertBox.style.display = "none";
+        }
+      }
+
+      // AJAX update function (called every 5 seconds)
+      function updateData() {
+        fetch("/get-latest-reading/") // Adjust to your actual endpoint
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.readings && data.readings.length > 0) {
+              const latest = data.readings[0];
+              checkForAlerts(latest);
+
+              // Update table or chart here
+              // e.g., chart.data.labels.push(latest.timestamp); ...
+            }
+          });
+      }
+
+      
+      setInterval(updateData, 5000);
+    </script>
+  </body>
+</html>
+
